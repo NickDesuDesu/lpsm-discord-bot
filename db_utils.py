@@ -2,9 +2,9 @@ from tinydb import TinyDB, Query
 
 db = TinyDB("database.json")
 collection = db.table("users")
-query = Query()
+QUERY = Query()
 
-def user_exists(discord_id) -> bool:
+def user_exists(discord_id: int) -> bool:
     """
     Checks if a user exists in the database based on their Discord ID.
 
@@ -18,7 +18,7 @@ def user_exists(discord_id) -> bool:
     bool
         True if the user exists, False otherwise.
     """
-    return get_user_by_discord_id(discord_id) is not None
+    return get_user(QUERY.discord_id==discord_id) is not None
 
 def insert_user(username, discord_id):
     """
@@ -49,43 +49,25 @@ def update_user(discord_id: int, new_data: dict):
         A dictionary containing the fields to update.
         Example: {"username": "NewName", "minecraft": True}
     """
-    user = get_user_by_discord_id(discord_id)
 
-    if user:
-        collection.update(new_data, query.discord_id == discord_id)
-    
+    if user_exists(discord_id):
+        collection.update(new_data, QUERY.discord_id == discord_id)
 
-def get_user_by_discord_id(discord_id: int):
+def get_user(query: Query):
     """
-    Retrieves a user document from the database by their Discord ID.
+    Retrieves user documents from the database by query.
 
     Parameters:
     -----------
-    discord_id : int or str
-        The Discord ID to search for.
+    query : str
+        The query.
 
     Returns:
     --------
     dict or None
         The user document if found, otherwise None.
     """
-    return collection.get(query.discord_id == discord_id)
-
-def get_user_by_username(username):
-    """
-    Retrieves a user document from the database by their username.
-
-    Parameters:
-    -----------
-    username : str
-        The Discord username to search for (not the full tag).
-
-    Returns:
-    --------
-    dict or None
-        The user document if found, otherwise None.
-    """
-    return collection.get(query.username == username)
+    return collection.get(query)
 
 def delete_user(username):
     """
@@ -101,7 +83,7 @@ def delete_user(username):
     list of int
         List of removed document IDs.
     """
-    return collection.remove(query.username == username)
+    return collection.remove(QUERY.username == username)
 
 def get_users(is_sorted:bool = False):
     """

@@ -2,8 +2,8 @@ from discord.ext.commands import Cog
 from aiohttp import web
 import asyncio
 
-from utils import get_user_from_target, create_embed, get_guild, hash_password
-from db_utils import get_user_by_discord_id, link_minecraft
+from utils import get_user_from_target, create_embed, get_guild, hash_password, verify_password
+from db_utils import get_user, link_minecraft, QUERY
 from main import SERVER_ID, PEPPER
 import time
 
@@ -14,7 +14,8 @@ class APICog(Cog):
         self.app = web.Application()
         self.app.add_routes([
             web.post('/minecraft/verify', self.minecraft_verify_registration),
-            web.post('/minecraft/register', self.minecraft_register)
+            web.post('/minecraft/register', self.minecraft_register),
+            web.post('/minecraft/login', self.minecraft_login)
         ])
         self.pending_registrations = {}
         self.registration_cleanup_tasks = {}
@@ -54,13 +55,21 @@ class APICog(Cog):
         user = await get_user_from_target(self.bot, discord_identifier)
         guild = get_guild(self.bot, SERVER_ID)
 
-        db_entry = get_user_by_discord_id(user.id)
+        discord_entry = get_user(QUERY.discord_id == int(discord_identifier))
+        minecraft_entry = get_user(QUERY.minecraft.username == minecraft_username)
 
-        if db_entry.get("minecraft", {}).get("linked", False):
+        if discord_entry.get("minecraft", {}).get("linked", False):
             return web.json_response(
-                {"error": f"There is already an account linked to {discord_identifier}."},
+                {"error": f"There is already a minecraft account linked to {discord_identifier}."},
                 status=403
             )
+        
+        if minecraft_entry.get("minecraft", {}).get("linked", False):
+            return web.json_response(
+                {"error": f"There is already a discord account linked to {minecraft_username}."},
+                status=403
+            )
+        
 
         if user:
             embed = create_embed(
@@ -152,6 +161,36 @@ class APICog(Cog):
                 {"error": "OTP was not confirmed. Registration cancelled."},
                 status=403
             )
+
+    async def minecraft_login(self, request):
+        params = request.query
+
+        minecraft_username = params.get("minecraft_username")
+        password = params.get("password")
+
+        if (not minecraft_username or not password):
+            return web.json_response(
+                {"error": "Missing parameters."},
+                status=400
+            )
+        
+        minecraft_entry = get_user(QUERY.minecraft.username==minecraft_username)
+
+        if minecraft_entry:
+            password_hash = minecraft_entry.get("minecraft", {}).get("password", None)
+
+            print(password, verify_password(password, password_hash, PEPPER))
+            if verify_password(password, password_hash, PEPPER):
+                return web.json_response(
+                    {"message": "Login Successful"},
+                    status=200
+                )
+
+        return web.json_response(
+            {"error": "Invalid credentials."},
+            status=403
+        )
+
 
     def cog_unload(self):
         asyncio.create_task(self.runner.cleanup())

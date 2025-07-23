@@ -1,30 +1,144 @@
-from tinymongo import TinyMongoClient
+from tinydb import TinyDB, Query
 
-client = TinyMongoClient()
-db = client.myauthdb
-
-users = db.users  
+db = TinyDB("database.json")
+collection = db.table("users")
+query = Query()
 
 def user_exists(discord_id) -> bool:
-    return True if get_user_by_discord_id(discord_id) else False
+    """
+    Checks if a user exists in the database based on their Discord ID.
+
+    Parameters:
+    -----------
+    discord_id : int or str
+        The Discord user ID to check.
+
+    Returns:
+    --------
+    bool
+        True if the user exists, False otherwise.
+    """
+    return get_user_by_discord_id(discord_id) is not None
 
 def insert_user(username, discord_id):
-    existing = users.find_one({"username": username})
-    if existing:
-        users.update({"_id": existing["_id"]}, {"username": username, "discord_id": discord_id})
-    else:
-        users.insert_one({"username": username, "discord_id": discord_id})
+    """
+    Inserts a new user into the database. Does nothing if the user already exists.
+    Parameters:
+    -----------
+    username : str
+        The user's Discord username (not their full tag).
+    discord_id : int or str
+        The user's Discord ID.
+    """
+    if user_exists(discord_id):
+        collection.insert(
+            {"username": username, 
+             "discord_id": discord_id
+            },
+        )
 
-def get_user_by_discord_id(discord_id):
-    user = users.find_one({"discord_id": discord_id})
-    return user if user else None
+def update_user(discord_id: int, new_data: dict):
+    """
+    Updates user data for a given Discord ID.
+
+    Parameters:
+    -----------
+    discord_id : int or str
+        The user's Discord ID to locate the document.
+    new_data : dict
+        A dictionary containing the fields to update.
+        Example: {"username": "NewName", "minecraft": True}
+    """
+    user = get_user_by_discord_id(discord_id)
+
+    if user:
+        collection.update(new_data, query.discord_id == discord_id)
+    
+
+def get_user_by_discord_id(discord_id: int):
+    """
+    Retrieves a user document from the database by their Discord ID.
+
+    Parameters:
+    -----------
+    discord_id : int or str
+        The Discord ID to search for.
+
+    Returns:
+    --------
+    dict or None
+        The user document if found, otherwise None.
+    """
+    return collection.get(query.discord_id == discord_id)
 
 def get_user_by_username(username):
-    user = users.find_one({"username": username})
-    return user if user else None
+    """
+    Retrieves a user document from the database by their username.
+
+    Parameters:
+    -----------
+    username : str
+        The Discord username to search for (not the full tag).
+
+    Returns:
+    --------
+    dict or None
+        The user document if found, otherwise None.
+    """
+    return collection.get(query.username == username)
 
 def delete_user(username):
-    return users.delete_one({"username": username})
+    """
+    Deletes a user from the database by their username.
 
-def list_users():
-    return list(users.find({}))
+    Parameters:
+    -----------
+    username : str
+        The username of the user to delete.
+
+    Returns:
+    --------
+    list of int
+        List of removed document IDs.
+    """
+    return collection.remove(query.username == username)
+
+def get_users(is_sorted:bool = False):
+    """
+    Retrieves a list of users from the database.
+
+    Parameters:
+    -----------
+    is_sorted : bool
+        Sorting the data before returning.
+
+    Returns:
+    --------
+    list of dict
+        A list of user documents.
+    """
+    if is_sorted:
+        return sorted(collection.all(), key=lambda user: user.get("username", "").lower())
+    
+    return collection.all()
+
+def link_minecraft(discord_id:int, minecraft_username:str, minecraft_password:str):
+    """
+    Links a minecraft account to an existing discord account
+
+    Parameters:
+    -----------
+    discord_id : int
+        Discord ID of the account that will be linked to the given minecraft account.
+    minecraft_username : str
+        Username of the minecraft account.
+    minecraft_pasword : str
+        Hashed password.
+    """
+    data = {"minecraft":{
+                "username": minecraft_username,
+                "password": minecraft_password,
+                "linked": True,
+                }
+            }
+    update_user(discord_id, data)

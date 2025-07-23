@@ -30,7 +30,7 @@ def insert_user(username, discord_id):
     discord_id : int or str
         The user's Discord ID.
     """
-    if user_exists(discord_id):
+    if not user_exists(discord_id):
         collection.insert(
             {"username": username, 
              "discord_id": discord_id

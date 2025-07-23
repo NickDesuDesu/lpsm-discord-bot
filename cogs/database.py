@@ -4,7 +4,7 @@ from discord import Embed, Member
 
 from asyncio import TimeoutError
 
-from db_utils import get_users, insert_user
+from db_utils import get_users, insert_user, get_user, QUERY
 from utils import create_embed, format_table, get_user_from_target
 from main import OWNER_IDS, ADMINS
 
@@ -45,8 +45,9 @@ class DatabaseCog(Cog, name="Database"):
         description="Lists users from the database.",
         usage="+list"
     )
-    async def list_users_command(self, ctx):
-        all_users = get_users(True)
+    async def list_users_command(self, ctx, type:str = None):
+
+        all_users = get_user(QUERY.minecraft.exists()) if type in ["mc", "minecraft"] else get_users(True)
 
         if not all_users:
             await ctx.send("No users found.")

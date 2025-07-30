@@ -16,3 +16,4 @@ RCON_PASSWORD=\<RCON password>
 SERVER_PATH="\<C:\\\Server\\\path.bat or C:/Server/path.bat>"
 
 <hr>
+Run main.py and it should be good xD.

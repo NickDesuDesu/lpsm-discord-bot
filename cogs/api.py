@@ -15,7 +15,8 @@ class APICog(Cog):
         self.app.add_routes([
             web.post('/minecraft/verify', self.minecraft_verify_registration),
             web.post('/minecraft/register', self.minecraft_register),
-            web.post('/minecraft/login', self.minecraft_login)
+            web.post('/minecraft/login', self.minecraft_login),
+            web.get('/minecraft/user', self.minecraft_get_user)
         ])
         self.pending_registrations = {}
         self.registration_cleanup_tasks = {}
@@ -54,34 +55,34 @@ class APICog(Cog):
 
         user = await get_user_from_target(self.bot, discord_identifier)
         guild = get_guild(self.bot, SERVER_ID)
-
-        discord_entry = get_user(QUERY.discord_id == int(discord_identifier))
-        minecraft_entry = get_user(QUERY.minecraft.username == minecraft_username)
-
-        if discord_entry.get("minecraft", {}).get("linked", False):
-            return web.json_response(
-                {"error": f"There is already a minecraft account linked to {discord_identifier}."},
-                status=403
-            )
-        
-        if minecraft_entry.get("minecraft", {}).get("linked", False):
-            return web.json_response(
-                {"error": f"There is already a discord account linked to {minecraft_username}."},
-                status=403
-            )
         
 
         if user:
+            discord_entry = {} if get_user(QUERY.discord_id == int(user.id)) == None else get_user(QUERY.discord_id == int(user.id))
+            minecraft_entry = {} if get_user(QUERY.minecraft.username == minecraft_username) == None else get_user(QUERY.minecraft.username == minecraft_username)
+
+            if discord_entry.get("minecraft", {}).get("linked", False):
+                return web.json_response(
+                    {"error": f"There is already a minecraft account linked to {discord_identifier}."},
+                    status=403
+                )
+            
+            if minecraft_entry.get("minecraft", {}).get("linked", False):
+                return web.json_response(
+                    {"error": f"There is already a discord account linked to {minecraft_username}."},
+                    status=403
+            )
+        
             embed = create_embed(
                 title = "**🔑 Minecraft OTP 🔑**",
                 description = "Use the OTP below to verify your account in Let's Play's Minecraft Server.",
                 fields = [("OTP", otp, True)],
-                footer = "This OTP will stop working after 60 seconds",
+                footer = "This OTP will stop working after 3 minutes.",
                 author_name=guild.name if guild else None,
                 author_icon_url=guild.icon.url if guild and guild.icon else None
             )
 
-            await user.send(embed=embed, delete_after=60)
+            await user.send(embed=embed, delete_after=180)
 
             self.pending_registrations[discord_identifier] = {
                     "minecraft_username": minecraft_username,
@@ -143,7 +144,9 @@ class APICog(Cog):
             mc_username = registration.get("minecraft_username")
             password = registration.get("password")
 
-            link_minecraft(int(discord_identifier), 
+            user = await get_user_from_target(self.bot, discord_identifier)
+
+            link_minecraft(user.id, 
                            mc_username, 
                            hash_password(password, PEPPER))
             
@@ -175,22 +178,53 @@ class APICog(Cog):
             )
         
         minecraft_entry = get_user(QUERY.minecraft.username==minecraft_username)
+        print(minecraft_entry)
 
         if minecraft_entry:
             password_hash = minecraft_entry.get("minecraft", {}).get("password", None)
 
-            print(password, verify_password(password, password_hash, PEPPER))
             if verify_password(password, password_hash, PEPPER):
                 return web.json_response(
                     {"message": "Login Successful"},
                     status=200
                 )
 
+            return web.json_response(
+                {"error": "Invalid credentials."},
+                status=403
+            )
+
         return web.json_response(
-            {"error": "Invalid credentials."},
-            status=403
+            {"error": "Non existent account"},
+            status=404
         )
 
+    async def minecraft_get_user(self, request):
+        params = request.query
+
+        minecraft_username = params.get("minecraft_username")
+
+        if (not minecraft_username):
+            return web.json_response(
+                {"error": "Missing parameters."},
+                status=400
+            )
+        
+        minecraft_entry = get_user(QUERY.minecraft.username==minecraft_username)
+
+        if minecraft_entry:
+            return web.json_response(
+                {"message": "Account exists."},
+                status=200
+            )
+        else:
+            return web.json_response(
+                {"error": "Account does not exist."},
+                status=404
+            )
+        
+
+        
 
     def cog_unload(self):
         asyncio.create_task(self.runner.cleanup())

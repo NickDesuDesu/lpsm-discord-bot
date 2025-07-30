@@ -9,8 +9,10 @@ class ErrorHandlerCog(Cog):
         self.log = bot.log
         super().__init__()
 
-    # @Cog.listener()
+    @Cog.listener()
     async def on_command_error(self, ctx, error):
+        self.log.error(error)
+
         if hasattr(ctx.command, 'on_error'):
             return
         

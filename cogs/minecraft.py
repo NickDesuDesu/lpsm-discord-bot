@@ -1,12 +1,23 @@
 from discord.ext.commands import Cog
-from discord.ext.commands import command
+from discord.ext.commands import command, check, cooldown, BucketType
 
-from utils import create_embed
+from db_utils import get_user, QUERY
+
+from utils import create_embed, format_table
+import asyncio
+from mcrcon import MCRcon
+import os
+import re
+import platform
+import subprocess
 
 class MinecraftCog(Cog, name="MinecraftServer"):
     def __init__(self, bot):
         self.bot = bot
         self.log = bot.log
+        self.empty_counter = 0
+        self.shutdown_threshold = 5
+        self.bot.loop.create_task(self.monitor_empty_server())
         super().__init__()
 
     @command(name="test")
@@ -25,6 +36,186 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             author_icon_url=ctx.guild.icon.url if ctx.guild and ctx.guild.icon else None
         )
         await ctx.send(embed=embed)
+    
+    def run_rcon_sync(self, command):
+        with MCRcon("localhost", os.getenv("RCON_PASSWORD"), port=25575) as mcr:
+            return mcr.command(command)
+
+    async def run_rcon_async(self, command):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.run_rcon_sync, command)
+    
+    async def get_server_status(self, ctx):
+        resp = await self.run_rcon_async("/forge tps")
+        
+        pattern = re.compile(
+            r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"
+        )
+        
+        concat_resp = {}
+
+        for match in pattern.finditer(resp):
+            dim = match.group("dimension") or match.group("overall")
+            tick_time = float(match.group("tick_time"))
+            tps = float(match.group("tps"))
+            concat_resp[dim] = {"tick_time": tick_time, "tps": tps}
+
+
+        table = format_table(["Dimension", "Mean Tick Time", "Mean TPS"],
+                                [[dim, stat["tick_time"], stat["tps"]] for dim, stat in concat_resp.items()])
+
+        embed = create_embed(
+            title="⛏️ Minecraft Server Status » Online 🟢",
+            description=table,
+            footer="Requested by " + ctx.author.name,
+        )
+
+        await ctx.send(embed=embed)
+
+    async def get_server_players(self, ctx):
+        resp = await self.run_rcon_async("/list")
+
+        pattern = re.compile(
+            r"There are (?P<current>\d+) of a max of (?P<max>\d+) players online:(?P<names>.*)"
+        )
+        
+        concat_resp = {}
+        match = pattern.search(resp)
+        if match:
+            concat_resp["current"] = int(match.group("current"))
+            concat_resp["max"] = int(match.group("max"))
+            concat_resp["players"] = [s.strip() for s in match.group("names").split(",")] if len(match.group("names")) > 1 else match.group("names").strip()
+
+        users = []
+        for player in concat_resp["players"]:
+            user = get_user(QUERY.minecraft.username==player)
+
+            if user:
+                users.append([player, user.username])
+            else:
+                users.append([player, "Unregistered"])
+
+        table = format_table(["Minecraft Username", "Discord Username"], users)
+        
+        embed = create_embed(
+            title=f"⛏️ Minecraft Server Players » ({concat_resp['current']}/{concat_resp['max']})👤",
+            description=table,
+            footer="Requested by " + ctx.author.name,
+        )
+
+        await ctx.send(embed=embed)
+
+
+    @command(name="mcs")
+    async def rcon(self, ctx, *args):
+        if not args:
+            await ctx.send("Please specify what you want to check: `status` or `players`")
+            return
+
+        subcommand = args[0].lower()
+
+        try:
+            match subcommand:
+                case "status": 
+                    await self.get_server_status(ctx)
+                case "players":
+                    await self.get_server_players(ctx)
+                case _:
+                    await ctx.send("Please specify what you want to check: `status` or `players`")
+        except:
+            await ctx.send("**🔴 Server is offline! 🔴**")
+        
+
+    @command(name="infome")
+    async def infome(self, ctx):
+        user = ctx.author
+        member = ctx.guild.get_member(user.id)
+
+        embed = create_embed(
+            title="Your Info 💖",
+            description="Here's what I know about you~\n***You can use the details below as your discord identifier for registering in the minecraft server.***",
+            fields=[
+                ("Username", f"{user}", True),
+                ("Display Name", f"{member.display_name if member else user.display_name}", True),
+                ("User ID", f"{user.id}", True),
+            ],
+            footer="Requested by " + user.name,
+            thumbnail_url=user.avatar.url if user.avatar else None,
+            author_name=ctx.guild.name if ctx.guild else None,
+            author_icon_url=ctx.guild.icon.url if ctx.guild and ctx.guild.icon else None
+        )
+
+        await ctx.send(embed=embed)
+
+    def has_role_id(role_id):
+        async def predicate(ctx):
+            return any(role.id == role_id for role in ctx.author.roles)
+        return check(predicate)
+
+    @has_role_id(1301513812196855848) 
+    @command(name="mcserverstart")
+    @cooldown(1, 60, BucketType.default) 
+    async def startserver(self, ctx):
+        server_path = os.getenv("SERVER_PATH")
+        try:
+            await self.run_rcon_async("/forge tps")
+
+            await ctx.send("**🟢 Server is already online 🟢**")
+        except:
+            try:
+                if not server_path or not os.path.isfile(server_path):
+                    await ctx.send("❌ Invalid or missing server path in `.env` file.")
+                    return
+
+                server_dir = os.path.dirname(server_path)
+
+                if platform.system() == "Windows":
+                    subprocess.Popen(["cmd", "/c", "start", "", server_path], cwd=server_dir, shell=True)
+                else:
+                    subprocess.Popen(["bash", server_path], cwd=server_dir)
+
+                await ctx.send("✅ Server start command executed.")
+            except Exception as e:
+                await ctx.send(f"❌ Failed to start server: `{str(e)}`")
+        
+    async def monitor_empty_server(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            try:
+                resp = await self.run_rcon_async("/list")
+                pattern = re.compile(
+                    r"There are (?P<current>\d+) of a max of (?P<max>\d+) players online:(?P<names>.*)"
+                )
+                match = pattern.search(resp)
+                if match:
+                    current_players = int(match.group("current"))
+                    if current_players == 0:
+                        self.empty_counter += 1
+                        self.log.info(f"No players online. Idle counter: {self.empty_counter}/{self.shutdown_threshold}")
+                        
+                        if self.empty_counter == 4:
+                            channel = self.bot.get_channel(1300647901311139921)
+                            if channel:
+                                await channel.send("🛑 Shutting down the server in **1 minute** due to inactivity...")
+                    else:
+                        self.empty_counter = 0
+
+                    if self.empty_counter >= self.shutdown_threshold:
+                        self.log.info("No players for 5 minutes. Shutting down server.")
+                        await self.run_rcon_async("/say [LPSM] Shutting down in 10 seconds due to inactivity. This can not be cancelled.")
+                        await asyncio.sleep(10)
+                        await self.run_rcon_async("/stop")
+                        channel = self.bot.get_channel(1300647901311139921)
+                        if channel:
+                            await channel.send("🛑 Server Offline... 🛑")
+
+                        self.empty_counter = 0  
+                        
+            except Exception as e:
+                self.log.warning(f"Failed to poll player list: {e}")
+                self.empty_counter = 0 
+
+            await asyncio.sleep(60)
 
     @Cog.listener()
     async def on_ready(self):

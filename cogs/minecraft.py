@@ -91,7 +91,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             user = get_user(QUERY.minecraft.username==player)
 
             if user:
-                users.append([player, user.username])
+                users.append([player, user.get("username")])
             else:
                 users.append([player, "Unregistered"])
 
@@ -114,16 +114,16 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         subcommand = args[0].lower()
 
-        try:
-            match subcommand:
-                case "status": 
-                    await self.get_server_status(ctx)
-                case "players":
-                    await self.get_server_players(ctx)
-                case _:
-                    await ctx.send("Please specify what you want to check: `status` or `players`")
-        except:
-            await ctx.send("**🔴 Server is offline! 🔴**")
+        # try:
+        match subcommand:
+            case "status": 
+                await self.get_server_status(ctx)
+            case "players":
+                await self.get_server_players(ctx)
+            case _:
+                await ctx.send("Please specify what you want to check: `status` or `players`")
+        # except Exception:
+        #     await ctx.send("**🔴 Server is offline! 🔴**")
         
 
     @command(name="infome")
@@ -212,7 +212,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                         self.empty_counter = 0  
                         
             except Exception as e:
-                self.log.warning(f"Failed to poll player list: {e}")
+                # self.log.warning(f"Failed to poll player list: {e}")
                 self.empty_counter = 0 
 
             await asyncio.sleep(60)

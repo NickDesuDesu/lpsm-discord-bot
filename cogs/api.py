@@ -178,7 +178,6 @@ class APICog(Cog):
             )
         
         minecraft_entry = get_user(QUERY.minecraft.username==minecraft_username)
-        print(minecraft_entry)
 
         if minecraft_entry:
             password_hash = minecraft_entry.get("minecraft", {}).get("password", None)

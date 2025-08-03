@@ -47,6 +47,11 @@ class MinecraftCog(Cog, name="MinecraftServer"):
     
     async def get_server_status(self, ctx):
         resp = await self.run_rcon_async("/forge tps")
+
+        if resp.lower().startswith("unknown"):
+            resp = await self.run_rcon_async("/fabric tps")
+
+        print(resp)
         
         pattern = re.compile(
             r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"
@@ -105,6 +110,35 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         await ctx.send(embed=embed)
 
+    async def get_server_info(self, ctx):
+        from discord import Embed
+
+        server_name = os.getenv("SERVER_NAME", "Unknown Server")
+        server_domain = os.getenv("SERVER_DOMAIN", "Unknown Domain")
+        server_version = os.getenv("SERVER_VERSION", "Unknown Version")
+        mod_loader = os.getenv("MOD_LOADER", "Unknown Loader")
+
+        is_online = True
+        try:
+            await self.run_rcon_async("/list")
+        except:
+            is_online = False
+
+        embed = create_embed(
+            title="🌐 Minecraft Server Info",
+            description="Here is the current server setup and status:",
+            fields=[
+                ("Server Name", server_name, True),
+                ("Server Domain", server_domain, True),
+                ("Version", server_version, True),
+                ("Mod Loader", mod_loader, True),
+                ("Modpack Download", f"[Click here]({os.getenv('MODPACK_URL')})", True),
+                ("Status", "🟢 Online" if is_online else "🔴 Offline", False),
+            ],
+            footer="Requested by " + ctx.author.name
+        )
+
+        await ctx.send(embed=embed)
 
     @command(name="mcs")
     async def rcon(self, ctx, *args):
@@ -114,16 +148,15 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         subcommand = args[0].lower()
 
-        # try:
         match subcommand:
             case "status": 
                 await self.get_server_status(ctx)
             case "players":
                 await self.get_server_players(ctx)
+            case "info":
+                await self.get_server_info(ctx)
             case _:
                 await ctx.send("Please specify what you want to check: `status` or `players`")
-        # except Exception:
-        #     await ctx.send("**🔴 Server is offline! 🔴**")
         
 
     @command(name="infome")

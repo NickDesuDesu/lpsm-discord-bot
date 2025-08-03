@@ -1,19 +1,47 @@
-# Let's Play Discord Server Manager
+# 🎮 Let's Play Discord Server Manager
 
-Discord bot for managing servers of the Let's play discord server.
+A custom Discord bot to manage your Minecraft server — designed for the Let's Play Discord community.
 
-<hr>
+---
 
-## Setup
-create a .env file and setup the following
+## 🛠 Features
 
-PASSWORD_PEPPER=\<pepper_for_hashing>
+- 🟢 Start your Minecraft server with a command  
+- 💬 View online players directly from Discord  
+- 📊 Check server TPS and status  
+- 📥 Share modpack download link  
+- 📡 Monitor activity and auto-shutdown if idle  
+- 🛡️ Secure player login and registration support (via Minecraft mod)
 
-DISCORD_API_KEY=\<Discord Bot API>
+---
 
-RCON_PASSWORD=\<RCON password>
+## ⚙️ Setup Guide
 
-SERVER_PATH="\<C:\\\Server\\\path.bat or C:/Server/path.bat>"
+1. Clone this repo  
+2. Create a `.env` file in the root directory  
+3. Fill it with the following keys:
 
-<hr>
-Run main.py and it should be good xD.
+```env
+# Used for hashing passwords securely
+PASSWORD_PEPPER=your_secret_pepper
+
+# Your Discord bot token
+DISCORD_API_KEY=your_discord_bot_api_key
+
+# RCON password set in server.properties
+RCON_PASSWORD=your_rcon_password
+
+# Full path to the server startup script
+# Example for Windows:
+SERVER_PATH="C:\\Path\\To\\Your\\Server\\run.bat"
+# Example for Linux:
+# SERVER_PATH="/home/youruser/mcserver/start.sh"
+
+# Custom server info
+SERVER_NAME=LPS Minecraft Server
+SERVER_DOMAIN=play.lpsmc.net
+SERVER_VERSION=1.21.1
+MOD_LOADER=Fabric
+
+# Modpack download link (optional but recommended)
+MODPACK_URL=https://your.upload.link/mods.rar

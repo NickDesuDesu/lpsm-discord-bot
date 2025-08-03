@@ -17,7 +17,7 @@ class GeneralCog(Cog):
                 **What I do:**\n
                 • Start and monitor the server automatically 🛠️\n
                 • Let users register securely using their Discord identity 🔐\n
-                • Auto-shutdown the server when it's inactive ⏲️\n\n
+                • Auto-shutdown the server when it's inactive ⏲️\n
                 **Security:**\n
                 Your passwords are *securely hashed and never stored in plain text.* 🔒\n
                 Everything I do is open-source, so feel free to check the code and see for yourself~!"""

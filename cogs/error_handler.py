@@ -25,16 +25,16 @@ class ErrorHandlerCog(Cog):
             embed.description = "Missing Argument!"
             embed.add_field(name="Argument", value=str(error.param.name), inline=False)
             embed.add_field(name="Usage", value=f"`{ctx.prefix}{ctx.command} <{error.param.name}>`", inline=False)
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, delete_after=120)
 
         if isinstance(error, CheckFailure):
             embed.description = "You can not use this command!"
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, delete_after=120)
 
         else:
             embed.description = error.__class__.__name__
             embed.add_field(name="Error Message", value=f"❌ Error: {str(error)}", inline=False)
-            await ctx.send(embed = embed)
+            await ctx.send(embed = embed, delete_after=120)
 
     @Cog.listener()
     async def on_ready(self):

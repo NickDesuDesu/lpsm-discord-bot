@@ -20,7 +20,11 @@ class MinecraftCog(Cog, name="MinecraftServer"):
         self.bot.loop.create_task(self.monitor_empty_server())
         super().__init__()
 
-    @command(name="test")
+    @command(
+        name="test",
+        help="Shows bot info and version.",
+        description="Displays information about the bot, including owner, version, and language."
+    )
     async def test(self, ctx):
         embed = create_embed(
             title="Bot Info",
@@ -35,7 +39,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             author_name=ctx.guild.name if ctx.guild else None,
             author_icon_url=ctx.guild.icon.url if ctx.guild and ctx.guild.icon else None
         )
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
     
     def run_rcon_sync(self, command):
         with MCRcon("localhost", os.getenv("RCON_PASSWORD"), port=25575) as mcr:
@@ -75,7 +79,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             footer="Requested by " + ctx.author.name,
         )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
 
     async def get_server_players(self, ctx):
         resp = await self.run_rcon_async("/list")
@@ -108,7 +112,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             footer="Requested by " + ctx.author.name,
         )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
 
     async def get_server_info(self, ctx):
         from discord import Embed
@@ -138,12 +142,16 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             footer="Requested by " + ctx.author.name
         )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
 
-    @command(name="mcs")
+    @command(
+        name="mcs",
+        help="Check Minecraft server status, players, or info.",
+        description="Usage: !mcs <status|players|info>. Shows server TPS, online players, or server info."
+    )
     async def rcon(self, ctx, *args):
         if not args:
-            await ctx.send("Please specify what you want to check: `status` or `players`")
+            await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
             return
 
         subcommand = args[0].lower()
@@ -156,10 +164,14 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             case "info":
                 await self.get_server_info(ctx)
             case _:
-                await ctx.send("Please specify what you want to check: `status` or `players`")
+                await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
         
 
-    @command(name="infome")
+    @command(
+        name="infome",
+        help="Shows your Discord info for Minecraft registration.",
+        description="Displays your Discord username, display name, and user ID for Minecraft server registration."
+    )
     async def infome(self, ctx):
         user = ctx.author
         member = ctx.guild.get_member(user.id)
@@ -178,7 +190,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             author_icon_url=ctx.guild.icon.url if ctx.guild and ctx.guild.icon else None
         )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
 
     def has_role_id(role_id):
         async def predicate(ctx):
@@ -186,18 +198,22 @@ class MinecraftCog(Cog, name="MinecraftServer"):
         return check(predicate)
 
     @has_role_id(1301513812196855848) 
-    @command(name="mcserverstart")
+    @command(
+        name="mcserverstart",
+        help="Start the Minecraft server (Must Have @cobblemon role).",
+        description="Starts the Minecraft server if it is offline. Requires admin role."
+    )
     @cooldown(1, 60, BucketType.default) 
     async def startserver(self, ctx):
         server_path = os.getenv("SERVER_PATH")
         try:
             await self.run_rcon_async("/forge tps")
 
-            await ctx.send("**🟢 Server is already online 🟢**")
+            await ctx.send("**🟢 Server is already online 🟢**", delete_after=120)
         except:
             try:
                 if not server_path or not os.path.isfile(server_path):
-                    await ctx.send("❌ Invalid or missing server path in `.env` file.")
+                    await ctx.send("❌ Invalid or missing server path in `.env` file.", delete_after=120)
                     return
 
                 server_dir = os.path.dirname(server_path)
@@ -207,9 +223,9 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                 else:
                     subprocess.Popen(["bash", server_path], cwd=server_dir)
 
-                await ctx.send("✅ Server start command executed.")
+                await ctx.send("✅ Server start command executed.", delete_after=120)
             except Exception as e:
-                await ctx.send(f"❌ Failed to start server: `{str(e)}`")
+                await ctx.send(f"❌ Failed to start server: `{str(e)}`", delete_after=120)
         
     async def monitor_empty_server(self):
         await self.bot.wait_until_ready()

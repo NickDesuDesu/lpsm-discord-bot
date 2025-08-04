@@ -8,7 +8,11 @@ class GeneralCog(Cog):
         self.log = bot.log
         super().__init__()
     
-    @command(name="about")
+    @command(
+        name="about",
+        help="About the Let's Play Server Manager bot.",
+        description="Shows information about the bot, its features, and links to the source code."
+    )
     async def about(self, ctx):
         embed = create_embed(
             title="💖 Let's Play Server Manager (LPSM) » Info",
@@ -23,7 +27,8 @@ class GeneralCog(Cog):
                 Everything I do is open-source, so feel free to check the code and see for yourself~!"""
             ,
             fields=[
-                ("📁 LPSAuth (Minecraft Mod)", "[View on GitHub](https://github.com/NickDesuDesu/LPSAuth/tree/master)", True),
+                ("📁 LPSAuth Forge (Minecraft Mod)", "[View on GitHub](https://github.com/NickDesuDesu/LPSAuth/tree/master)", True),
+                ("📁 LPSAuth Fabric(Minecraft Mod)" "[View on Github](https://github.com/NickDesuDesu/LPSAuth-Fabric-1.21.1)")
                 ("🤖 LPSM (Discord Bot)", "[View on GitHub](https://github.com/NickDesuDesu/lpsm-discord-bot)", True)
             ],
             footer="*Bot lovingly created and maintained by NickXD 💻💖*",
@@ -32,7 +37,7 @@ class GeneralCog(Cog):
             author_icon_url=ctx.guild.icon.url if ctx.guild and ctx.guild.icon else None
         )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=120)
 
 
     @Cog.listener()

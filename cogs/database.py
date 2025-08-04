@@ -19,7 +19,11 @@ class DatabaseCog(Cog, name="Database"):
             return ctx.author.id in OWNER_IDS or ctx.author.id in ADMINS
         return check(predicate)
     
-    @command(name="add")
+    @command(
+        name="add",
+        help="Add a user to the database (admin only).",
+        description="Adds a Discord user to the database by mention, username, or ID. Admin only."
+    )
     @is_allowed_user()
     async def add_user(self, ctx: Context, target):
         user = None
@@ -30,19 +34,20 @@ class DatabaseCog(Cog, name="Database"):
             user = await get_user_from_target(self.bot, target)
 
         if target == None:
-            await ctx.send("❌ Invalid command usage. Please use a mention, username, or ID.")
+            await ctx.send("❌ Invalid command usage. Please use a mention, username, or ID.", delete_after=120)
             return
 
         if user is None:
-            await ctx.send("❌ Couldn't find user by that input. Please use a mention, username, or ID.")
+            await ctx.send("❌ Couldn't find user by that input. Please use a mention, username, or ID.", delete_after=120)
             return
 
         insert_user(user.name, user.id)
-        await ctx.send(f"✅ Added **{user.name}** to the database~!")
+        await ctx.send(f"✅ Added **{user.name}** to the database~!", delete_after=120)
 
     @command(
         name="list",
-        description="Lists users from the database.",
+        help="List users from the database.",
+        description="Lists users from the database. Use '!list' for all users or '!list mc' for Minecraft-linked users.",
         usage="+list"
     )
     async def list_users_command(self, ctx, type:str = None):
@@ -50,7 +55,7 @@ class DatabaseCog(Cog, name="Database"):
         all_users = get_user(QUERY.minecraft.exists()) if type in ["mc", "minecraft"] else get_users(True)
 
         if not all_users:
-            await ctx.send("No users found.")
+            await ctx.send("No users found.", delete_after=120)
             return
         
         users_per_page = 10
@@ -76,7 +81,7 @@ class DatabaseCog(Cog, name="Database"):
             )
             return embed
 
-        message = await ctx.send(embed=get_page_embed(current_page))
+        message = await ctx.send(embed=get_page_embed(current_page), delete_after=120)
 
         if total_pages == 1:
             return 

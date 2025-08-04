@@ -1,3 +1,4 @@
+aio-mc-rcon==3.4.1
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.14
 aiosignal==1.4.0

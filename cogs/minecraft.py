@@ -46,8 +46,10 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             return mcr.command(command)
 
     async def run_rcon_async(self, command):
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self.run_rcon_sync, command)
+        # loop = asyncio.get_running_loop()
+        # return await loop.run_in_executor(None, self.run_rcon_sync, command)
+
+        return await asyncio.to_thread(self.run_rcon_sync, command)
     
     async def get_server_status(self, ctx):
         resp = await self.run_rcon_async("/forge tps")
@@ -156,16 +158,18 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         subcommand = args[0].lower()
 
-        match subcommand:
-            case "status": 
-                await self.get_server_status(ctx)
-            case "players":
-                await self.get_server_players(ctx)
-            case "info":
-                await self.get_server_info(ctx)
-            case _:
-                await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
-        
+        try:
+            match subcommand:
+                case "status": 
+                    await self.get_server_status(ctx)
+                case "players":
+                    await self.get_server_players(ctx)
+                case "info":
+                    await self.get_server_info(ctx)
+                case _:
+                    await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
+        except:
+            await ctx.send("Server is offline", delete_after=120)
 
     @command(
         name="infome",

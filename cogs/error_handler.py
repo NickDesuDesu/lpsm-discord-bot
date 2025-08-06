@@ -1,6 +1,6 @@
 from discord.ext.commands import Cog
 from discord.ext.commands import MissingRequiredArgument, CheckFailure
-
+from discord import Forbidden, HTTPException
 from utils import create_embed
 
 class ErrorHandlerCog(Cog):
@@ -8,6 +8,15 @@ class ErrorHandlerCog(Cog):
         self.bot = bot
         self.log = bot.log
         super().__init__()
+
+    @Cog.listener()
+    async def on_command(self, ctx):
+        try:
+            await ctx.message.delete()
+        except Forbidden:
+            print("❌ Bot can't delete messages (no permissions)")
+        except HTTPException:
+            print("⚠️ Failed to delete the command message")
 
     @Cog.listener()
     async def on_command_error(self, ctx, error):

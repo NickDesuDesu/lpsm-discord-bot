@@ -60,8 +60,6 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         if resp.lower().startswith("unknown"):
             resp = await self.run_rcon_async("/fabric tps")
-
-        print(resp)
         
         pattern = re.compile(
             r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"
@@ -157,23 +155,24 @@ class MinecraftCog(Cog, name="MinecraftServer"):
     )
     async def rcon(self, ctx, *args):
         if not args:
-            await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
+            await ctx.send("Please specify what you want to check: `status`, `players`, or `info`", delete_after=120)
             return
 
         subcommand = args[0].lower()
 
-        # try:
-        match subcommand:
-            case "status": 
-                await self.get_server_status(ctx)
-            case "players":
-                await self.get_server_players(ctx)
-            case "info":
-                await self.get_server_info(ctx)
-            case _:
-                await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
-        # except:
-        #     await ctx.send("Server is offline", delete_after=120)
+        try:
+            match subcommand:
+                case "status": 
+                    await self.get_server_status(ctx)
+                case "players":
+                    await self.get_server_players(ctx)
+                case "info":
+                    await self.get_server_info(ctx)
+                case _:
+                    await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
+        except:
+            await ctx.message.delete()
+            await ctx.send("Server is offline", delete_after=20)
 
     @command(
         name="infome",
@@ -258,7 +257,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                         if self.empty_counter == 4:
                             channel = self.bot.get_channel(1300647901311139921)
                             if channel:
-                                await channel.send("🛑 Shutting down the server in **1 minute** due to inactivity...")
+                                await channel.send("🛑 Shutting down the server in **1 minute** due to inactivity...", delete_after=60)
                     else:
                         self.empty_counter = 0
 
@@ -269,7 +268,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                         await self.run_rcon_async("/stop")
                         channel = self.bot.get_channel(1300647901311139921)
                         if channel:
-                            await channel.send("🛑 Server Offline... 🛑")
+                            await channel.send("🛑 Server Offline... 🛑", delete_after=120)
 
                         self.empty_counter = 0  
                         

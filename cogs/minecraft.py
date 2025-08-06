@@ -5,7 +5,7 @@ from db_utils import get_user, QUERY
 
 from utils import create_embed, format_table
 import asyncio
-from mcrcon import MCRcon
+from asyncrcon import AsyncRCON, AuthenticationException
 import os
 import re
 import platform
@@ -41,15 +41,19 @@ class MinecraftCog(Cog, name="MinecraftServer"):
         )
         await ctx.send(embed=embed, delete_after=120)
     
-    def run_rcon_sync(self, command):
-        with MCRcon("localhost", os.getenv("RCON_PASSWORD"), port=25575) as mcr:
-            return mcr.command(command)
-
     async def run_rcon_async(self, command):
         # loop = asyncio.get_running_loop()
         # return await loop.run_in_executor(None, self.run_rcon_sync, command)
-
-        return await asyncio.to_thread(self.run_rcon_sync, command)
+        rcon = AsyncRCON('localhost:25575', 'eduard32')
+        try:
+            await rcon.open_connection()
+        except AuthenticationException:
+            self.log.warning('Login failed: Unauthorized.')
+            return
+            
+        res = await rcon.command(command)
+        rcon.close()
+        return res
     
     async def get_server_status(self, ctx):
         resp = await self.run_rcon_async("/forge tps")

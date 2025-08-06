@@ -158,18 +158,18 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         subcommand = args[0].lower()
 
-        try:
-            match subcommand:
-                case "status": 
-                    await self.get_server_status(ctx)
-                case "players":
-                    await self.get_server_players(ctx)
-                case "info":
-                    await self.get_server_info(ctx)
-                case _:
-                    await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
-        except:
-            await ctx.send("Server is offline", delete_after=120)
+        # try:
+        match subcommand:
+            case "status": 
+                await self.get_server_status(ctx)
+            case "players":
+                await self.get_server_players(ctx)
+            case "info":
+                await self.get_server_info(ctx)
+            case _:
+                await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
+        # except:
+        #     await ctx.send("Server is offline", delete_after=120)
 
     @command(
         name="infome",
@@ -225,7 +225,12 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                 if platform.system() == "Windows":
                     subprocess.Popen(["cmd", "/c", "start", "", server_path], cwd=server_dir, shell=True)
                 else:
-                    subprocess.Popen(["bash", server_path], cwd=server_dir)
+                    subprocess.Popen(
+                        f"tmux new-session -d -s mcserver 'bash \"{server_path}\"'",
+                        cwd=server_dir,
+                        shell=True,
+                        executable="/bin/bash"
+                    )
 
                 await ctx.send("✅ Server start command executed.", delete_after=120)
             except Exception as e:

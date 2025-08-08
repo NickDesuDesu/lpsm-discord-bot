@@ -171,7 +171,6 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                 case _:
                     await ctx.send("Please specify what you want to check: `status` or `players`", delete_after=120)
         except:
-            await ctx.message.delete()
             await ctx.send("Server is offline", delete_after=20)
 
     @command(

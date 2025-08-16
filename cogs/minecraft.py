@@ -11,6 +11,8 @@ import re
 import platform
 import subprocess
 
+from datetime import datetime
+
 class MinecraftCog(Cog, name="MinecraftServer"):
     def __init__(self, bot):
         self.bot = bot
@@ -42,8 +44,6 @@ class MinecraftCog(Cog, name="MinecraftServer"):
         await ctx.send(embed=embed, delete_after=120)
     
     async def run_rcon_async(self, command):
-        # loop = asyncio.get_running_loop()
-        # return await loop.run_in_executor(None, self.run_rcon_sync, command)
         rcon = AsyncRCON('localhost:25575', 'eduard32')
         try:
             await rcon.open_connection()
@@ -272,10 +272,33 @@ class MinecraftCog(Cog, name="MinecraftServer"):
                         self.empty_counter = 0  
                         
             except Exception as e:
-                # self.log.warning(f"Failed to poll player list: {e}")
                 self.empty_counter = 0 
 
             await asyncio.sleep(60)
+
+    async def cog_after_invoke(self, ctx):
+        args = ctx.args[2:]
+        kwargs = ctx.kwargs
+
+        args_list = [str(a) for a in args] + [f"{k}={v}" for k, v in kwargs.items()]
+        args_str = ", ".join(args_list) if args_list else "None"
+        
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        embed = create_embed(
+            title="📜 Command Executed",
+            fields=[
+                ("Command", f"`{ctx.command}`", False),
+                ("Parameters", args_str, False),
+                ("User", f"{ctx.author} ({ctx.author.mention})", True),
+                ("Channel", f"{ctx.channel.mention}", True),
+                ("Datetime", now, False),
+            ],
+            footer="MinecraftCog Logger"
+        )
+
+        channel = self.bot.get_channel(1406101545363308582)
+        await channel.send(embed=embed)
 
     @Cog.listener()
     async def on_ready(self):

@@ -22,6 +22,8 @@ class ErrorHandlerCog(Cog):
     async def on_command_error(self, ctx, error):
         self.log.error(error)
 
+        raise error
+
         if hasattr(ctx.command, 'on_error'):
             return
         

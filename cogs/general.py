@@ -28,7 +28,7 @@ class GeneralCog(Cog):
             ,
             fields=[
                 ("📁 LPSAuth Forge (Minecraft Mod)", "[View on GitHub](https://github.com/NickDesuDesu/LPSAuth)", True),
-                ("📁 LPSAuth Fabric(Minecraft Mod)" "[View on Github](https://github.com/NickDesuDesu/LPSAuth-Fabric-1.21.1)", True)
+                ("📁 LPSAuth Fabric(Minecraft Mod)", "[View on Github](https://github.com/NickDesuDesu/LPSAuth-Fabric-1.21.1)", True),
                 ("🤖 LPSM (Discord Bot)", "[View on GitHub](https://github.com/NickDesuDesu/lpsm-discord-bot)", True)
             ],
             footer="*Bot lovingly created and maintained by NickXD 💻💖*",

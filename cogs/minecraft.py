@@ -60,6 +60,9 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         if resp.lower().startswith("unknown"):
             resp = await self.run_rcon_async("/fabric tps")
+
+            if resp.lower().startswith("unknown"):
+                resp = await self.run_rcon_async("/neoforge tps")
         
         pattern = re.compile(
             r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"

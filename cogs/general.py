@@ -27,7 +27,7 @@ class GeneralCog(Cog):
                 Everything I do is open-source, so feel free to check the code and see for yourself~!"""
             ,
             fields=[
-                ("📁 LPSAuth Forge (Minecraft Mod)", "[View on GitHub](https://github.com/NickDesuDesu/LPSAuth/tree/master)", True),
+                ("📁 LPSAuth Forge (Minecraft Mod)", "[View on GitHub](https://github.com/NickDesuDesu/LPSAuth)", True),
                 ("📁 LPSAuth Fabric(Minecraft Mod)" "[View on Github](https://github.com/NickDesuDesu/LPSAuth-Fabric-1.21.1)")
                 ("🤖 LPSM (Discord Bot)", "[View on GitHub](https://github.com/NickDesuDesu/lpsm-discord-bot)", True)
             ],

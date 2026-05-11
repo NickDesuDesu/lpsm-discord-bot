@@ -23,7 +23,7 @@ class MinecraftCog(Cog, name="MinecraftServer"):
         super().__init__()
 
     @command(
-        name="test",
+        name="botinfo",
         help="Shows bot info and version.",
         description="Displays information about the bot, including owner, version, and language."
     )
@@ -201,12 +201,16 @@ class MinecraftCog(Cog, name="MinecraftServer"):
 
         await ctx.send(embed=embed, delete_after=120)
 
-    def has_role_id(role_id):
+    def has_role_id(role_ids):
+        if isinstance(role_ids, int):
+            role_ids = [role_ids]
+        
         async def predicate(ctx):
-            return any(role.id == role_id for role in ctx.author.roles)
+            return any(role.id in role_ids for role in ctx.author.roles)
+        
         return check(predicate)
 
-    @has_role_id(1301513812196855848) 
+    @has_role_id([1301513812196855848, 1301513812196855848]) 
     @command(
         name="mcserverstart",
         help="Start the Minecraft server (Must Have @cobblemon role).",

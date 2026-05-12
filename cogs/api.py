@@ -211,16 +211,25 @@ class APICog(Cog):
         
         minecraft_entry = get_user(QUERY.minecraft.username==minecraft_username)
 
+        
+
         if minecraft_entry:
             return web.json_response(
                 {"message": "Account exists."},
                 status=200
             )
-        else:
-            return web.json_response(
-                {"error": "Account does not exist."},
-                status=404
+        
+        for registration_data in self.pending_registrations.values():
+            if registration_data["minecraft_username"] == minecraft_username:
+                return web.json_response(
+                {"message": "Account Registration Pending."},
+                status=201
             )
+
+        return web.json_response(
+            {"error": "Account does not exist."},
+            status=404
+        )
         
 
         

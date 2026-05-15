@@ -64,17 +64,29 @@ class MinecraftCog(Cog, name="MinecraftServer"):
             if resp.lower().startswith("unknown"):
                 resp = await self.run_rcon_async("/neoforge tps")
         
-        pattern = re.compile(
-            r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"
-        )
-        
         concat_resp = {}
 
-        for match in pattern.finditer(resp):
-            dim = match.group("dimension") or match.group("overall")
-            tick_time = float(match.group("tick_time"))
-            tps = float(match.group("tps"))
-            concat_resp[dim] = {"tick_time": tick_time, "tps": tps}
+        neoforge_pattern = re.compile(
+            r'^(?P<dimension>[\w:]+): (?P<tps>[\d.]+) TPS \((?P<tick_time>[\d.]+) ms/tick\)$',
+            re.MULTILINE
+        )
+        neoforge_matches = list(neoforge_pattern.finditer(resp))
+
+        if neoforge_matches:
+            for match in neoforge_matches:
+                dim = match.group("dimension")
+                tps = float(match.group("tps"))
+                tick_time = float(match.group("tick_time"))
+                concat_resp[dim] = {"tick_time": tick_time, "tps": tps}
+        else:
+            pattern = re.compile(
+                r"(?:(Dim minecraft:(?P<dimension>\w+))|(?P<overall>Overall))([^:]*:*\w*\): |(: ))Mean tick time: (?P<tick_time>[\d.]+) ms. Mean TPS: (?P<tps>[\d.]+)"
+            )
+            for match in pattern.finditer(resp):
+                dim = match.group("dimension") or match.group("overall")
+                tick_time = float(match.group("tick_time"))
+                tps = float(match.group("tps"))
+                concat_resp[dim] = {"tick_time": tick_time, "tps": tps}
 
 
         table = format_table(["Dimension", "Mean Tick Time", "Mean TPS"],

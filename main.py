@@ -1,5 +1,5 @@
 from discord.ext.commands import Bot as BotBase
-from discord import Intents
+from discord import Intents, Member
 
 import logging
 from pathlib import Path
@@ -69,6 +69,22 @@ class Bot(BotBase):
                             insert_user(member.name, member.id)
                             self.log.info(f"   |-Added new user to DB: {member.name} ({member.id})")
         self.log.info("User database sync complete")
+    
+    async def on_member_join(self, member: Member):
+        if member.guild.id != SERVER_ID:
+            return
+        
+        if member.bot:
+            return
+        
+        if not user_exists(member.id):
+            insert_user(member.name, member.id)
+            self.log.info(f"   |-Added new user to DB: {member.name} ({member.id})")
+        else:
+            self.log.info(f"   |-Existing member rejoined: {member.name} ({member.id})")
+
+    async def globally_block_dms(self, ctx):
+        return ctx.guild is not None
 
     async def globally_block_dms(self, ctx):
         return ctx.guild is not None
